@@ -14,6 +14,11 @@ state, and on write requests it verifies this towards the "expected version" par
 A [hash_ring](https://github.com/discord/ex_hash_ring) is used to ensure that a
 stream always goes to the same node.
 
+A phoenix pubsub is used to broadcast new events.
+
+The nodes that shall have agents are set in the config (see config/test.exs), and to guarantee consistency they
+cannot be changed while running.   Its fine to autoscale your app, so long the nodes 
+defined are not changed and not scaled out.
 
 ## Installation
 
