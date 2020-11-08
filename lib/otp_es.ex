@@ -14,7 +14,11 @@ defmodule OtpEs do
     |> :rpc.call(OtpEs, :get_event_nr_local, [stream_id])
   end
 
-  def get_node(key), do: FastGlobal.get(:ring) |> ExHashRing.HashRing.find_node(key)
+  def get_node(key) do
+    node = FastGlobal.get(:ring) |> ExHashRing.HashRing.find_node(key)
+    Logger.info("Node for stream #{key} is #{node}")
+    node
+    end
 
   def delete_event(stream_id, nr), do: @repo.delete_event(stream_id, nr)
 
