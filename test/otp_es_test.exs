@@ -13,9 +13,12 @@ defmodule OtpEsTest do
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
     assert OtpEs.get_event_nr(stream_id) == 2
     assert OtpEs.get_all_events_from_stream(stream_id) == ["sahsa", "sahsa"]
+    assert OtpEs.get_all_events_from_stream("idontexist") == []
 
     OtpEs.delete_event(stream_id, 1)
     OtpEs.delete_event(stream_id, 2)
+
+    
 
   end
 
