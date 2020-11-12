@@ -24,21 +24,26 @@ defmodule OtpEs do
 
   ##Only to be used by aggregatr
   def get_all_events_from_stream(stream_id) do
-       nr = @repo.nr_of_events_in_stream(stream_id)
-       1..nr
-       |> Enum.to_list
-       |> Enum.map(fn index -> @repo.get_event(stream_id, index) end)
+       @repo.nr_of_events_in_stream(stream_id)
+       |> case do
+         0 -> []
+         nr -> 1..nr
+       		|> Enum.to_list
+       		|> Enum.map(fn index -> @repo.get_event(stream_id, index) end)
+       	end
   end
 
   defp get_and_send_events(stream_id, pid) do
-       nr = @repo.nr_of_events_in_stream(stream_id)
-       1..nr
-       |> Enum.to_list
-       |> Enum.map(fn index -> event = @repo.get_event(stream_id, index)
+       @repo.nr_of_events_in_stream(stream_id)
+       |> case do
+         0 -> :ok
+         nr -> 1..nr
+       		|> Enum.to_list
+       		|> Enum.map(fn index -> event = @repo.get_event(stream_id, index)
        				send(pid, {stream_id, index, event})
        				end)
-
-    :ok
+       		:ok
+       		end
   end
        			       
   def read_and_subsribe_all_events() do
@@ -77,6 +82,13 @@ defmodule OtpEs do
   end
 
   def handle_call(:get_event_nr, _, event_nr), do: {:reply, event_nr, event_nr}
+  
+  def handle_call({:put_event, stream_id, event, -1}, _from, event_nr) do
+      :ok = GoogleApi.put_event(stream_id, event_nr + 1, event)
+      Phoenix.PubSub.broadcast(:es_pubsub, stream_id, {stream_id, event_nr + 1, event})
+      Phoenix.PubSub.broadcast(:es_pubsub, "all", {stream_id, event_nr + 1, event})
+      {:reply, :ok, event_nr + 1}
+  end
   
   def handle_call({:put_event, stream_id, event, expected_nr}, _from, event_nr) do
     with true <- expected_nr == event_nr + 1,
