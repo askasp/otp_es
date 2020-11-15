@@ -1,6 +1,6 @@
 
 defmodule SomeEvent do
-  defstruct []
+  defstruct [:id]
 end
 
 defmodule OtpEsTest do
@@ -16,9 +16,9 @@ defmodule OtpEsTest do
     assert   GoogleApi.nr_of_events_in_stream(stream_id) == 1
     assert OtpEs.put_event(stream_id, "sahsa", 1) == {:error, :wrong_expected_version}
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
-    assert OtpEs.put_event(stream_id, %SomeEvent{}, 3) == :ok
+    assert OtpEs.put_event(stream_id, %SomeEvent{id: "as"}, 3) == :ok
     assert OtpEs.get_event_nr(stream_id) == 3
-    assert OtpEs.get_all_events_from_stream(stream_id) == ["sahsa", "sahsa", %SomeEvent{}]
+    assert OtpEs.get_all_events_from_stream(stream_id) == ["sahsa", "sahsa", %SomeEvent{id: "as"}]
     
     assert OtpEs.get_all_events_from_stream("idontexist") == []
 

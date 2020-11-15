@@ -26,11 +26,17 @@ defmodule GoogleApi do
       get("/download/storage/v1/b/#{@bucket}/o/#{stream_id}%2f#{event_nr}?alt=media&fields=body")
 
     map = a.body |> Jason.decode!()
+    
    case is_map(map) && Map.has_key?(map, "struct_type") do
       false -> map
-      true -> struct(map["struct_type"]  |> String.to_atom, Map.delete(map, "struct_type") )
+      true -> struct(map["struct_type"]  |> String.to_atom, string_map_to_atom_map(Map.delete(map, "struct_type")))
       end
     
+  end
+
+  def string_map_to_atom_map(string_map) do
+    for {key, val}  <- string_map, into: %{}, do: {String.to_atom(key), val}
+
   end
 
   def nr_of_events_in_stream(stream_id) do
