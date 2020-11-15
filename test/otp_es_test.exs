@@ -1,5 +1,10 @@
+
+defmodule SomeEvent do
+  defstruct []
+end
+
 defmodule OtpEsTest do
-  #  use GoogleApi.Storage.TestHelper
+    #  use GoogleApi.Storage.TestHelper
 
   use ExUnit.Case
 
@@ -11,12 +16,15 @@ defmodule OtpEsTest do
     assert   GoogleApi.nr_of_events_in_stream(stream_id) == 1
     assert OtpEs.put_event(stream_id, "sahsa", 1) == {:error, :wrong_expected_version}
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
-    assert OtpEs.get_event_nr(stream_id) == 2
-    assert OtpEs.get_all_events_from_stream(stream_id) == ["sahsa", "sahsa"]
+    assert OtpEs.put_event(stream_id, %SomeEvent{}, 3) == :ok
+    assert OtpEs.get_event_nr(stream_id) == 3
+    assert OtpEs.get_all_events_from_stream(stream_id) == ["sahsa", "sahsa", %SomeEvent{}]
+    
     assert OtpEs.get_all_events_from_stream("idontexist") == []
 
     OtpEs.delete_event(stream_id, 1)
     OtpEs.delete_event(stream_id, 2)
+    OtpEs.delete_event(stream_id, 3)
 
     
 

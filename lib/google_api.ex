@@ -25,7 +25,12 @@ defmodule GoogleApi do
     {:ok, a} =
       get("/download/storage/v1/b/#{@bucket}/o/#{stream_id}%2f#{event_nr}?alt=media&fields=body")
 
-    a.body |> Jason.decode!()
+    map = a.body |> Jason.decode!()
+   case is_map(map) && Map.has_key?(map, "struct_type") do
+      false -> map
+      true -> struct(map["struct_type"]  |> String.to_atom, Map.delete(map, "struct_type") )
+      end
+    
   end
 
   def nr_of_events_in_stream(stream_id) do
@@ -38,10 +43,16 @@ defmodule GoogleApi do
     end
   end
 
-  def put_event(stream_id, event_nr, data) do
-    enc_data = data |> Jason.encode!()
+  def put_event(stream_id, event_nr, event) do
+    
+    data = case (is_map(event) && Map.has_key?(event, :__struct__) ) do
+      	false -> event
+      	true -> Map.from_struct(event)  |> Map.put(:struct_type, event.__struct__)
+      	end
 
-    {:ok, a} =
+   enc_data = data |> Jason.encode!()
+
+    {:ok, _a} =
       post(
         "/upload/storage/v1/b/#{@bucket}/o?uploadType=media&name=#{stream_id}%2f#{event_nr}",
         enc_data
