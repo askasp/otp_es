@@ -29,7 +29,7 @@ defmodule OtpEs.MixProject do
       # {:dep_from_hexpm, "~> 0.3.0"},
       {:goth, "~> 1.2.0"},
       {:jason, "~> 1.2.2"},
-      {:tesla, "~> 1.3.0"},
+      {:tesla, "~> 1.4.0"},
       {:ex_hash_ring, "~> 3.0"},
       {:phoenix_pubsub, "~> 2.0.0"},
       {:local_cluster, "~> 1.2", only: [:test]},
