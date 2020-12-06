@@ -46,7 +46,7 @@ defmodule OtpEs do
        		end
   end
        			       
-  def read_and_subsribe_all_events() do
+  def read_and_subscribe_all_events() do
     Phoenix.PubSub.subscribe(:es_pubsub, "all")
     pid = self()
     Task.start_link(fn -> @repo.get_streams
