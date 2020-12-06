@@ -1,5 +1,6 @@
 defmodule GoogleApi do
   use Tesla
+  require Logger
 
   @moduledoc """
   Documentation for GoogleApi.Storage.Samples.
@@ -41,6 +42,7 @@ defmodule GoogleApi do
 
   def nr_of_events_in_stream(stream_id) do
     {:ok, a} = get("/storage/v1/b/#{@bucket}/o/?prefix=#{stream_id}&fields=items(name)")
+    Logger.debug("Nr of events is #{inspect(a)}")
 
     a.body["items"]
     |> case do

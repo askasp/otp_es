@@ -12,7 +12,7 @@ defmodule OtpEsTest do
     nodes = LocalCluster.start_nodes("my-cluster", 3)
     stream_id = :crypto.strong_rand_bytes(64) |> Base.url_encode64()
     assert   GoogleApi.nr_of_events_in_stream(stream_id) == 0
-    assert OtpEs.put_event(stream_id, "sahsa", 1) == :ok
+    assert OtpEs.put_event(stream_id, "sahsa", -1) == :ok
     assert   GoogleApi.nr_of_events_in_stream(stream_id) == 1
     assert OtpEs.put_event(stream_id, "sahsa", 1) == {:error, :wrong_expected_version}
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
