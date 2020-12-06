@@ -38,7 +38,7 @@ defmodule OtpEsTest do
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
     assert OtpEs.put_event(stream_id2, "sahsa", 1) == :ok
     assert OtpEs.put_event(stream_id2, "sahsa", 2) == :ok
-    assert OtpEs.read_and_subsribe_all_events() == :ok
+    assert OtpEs.read_and_subscribe_all_events() == :ok
     assert_receive {stream_id, 1, "sahsa"}, 20000
     assert_receive {stream_id, 2, "sahsa"}, 20000
     assert_receive {stream_id2, 1, "sahsa"}, 20000
