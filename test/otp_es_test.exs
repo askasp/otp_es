@@ -34,6 +34,7 @@ defmodule OtpEsTest do
     nodes = LocalCluster.start_nodes("my-cluster", 3)
     stream_id = :crypto.strong_rand_bytes(64) |> Base.url_encode64()
     stream_id2 = :crypto.strong_rand_bytes(64) |> Base.url_encode64()
+    assert GoogleApi.get_streams() == []
     assert OtpEs.put_event(stream_id, "sahsa", 1) == :ok
     assert OtpEs.put_event(stream_id, "sahsa", 2) == :ok
     assert OtpEs.put_event(stream_id2, "sahsa", 1) == :ok

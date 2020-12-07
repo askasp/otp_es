@@ -19,8 +19,12 @@ defmodule GoogleApi do
   def get_streams() do
     {:ok, a} = get("/storage/v1/b/#{@bucket}/o/?delimiter=/")
     a.body["prefixes"]
-    |> Enum.map(fn id -> String.replace(id, "/", "") end)
+    |> case do
+      nil -> []
+      x -> x |> Enum.map(fn id -> String.replace(id, "/", "") end)
+    end
   end
+
 
   def get_event(stream_id, event_nr) do
     {:ok, a} =
