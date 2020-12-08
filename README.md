@@ -37,3 +37,8 @@ Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_do
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/otp_es](https://hexdocs.pm/otp_es).
 
+
+### TODO
+- Fix the bucket config so its not an env variable.
+- Add logging
+
