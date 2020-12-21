@@ -1,6 +1,7 @@
 defmodule OtpEs.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
+  require Logger
   @moduledoc false
 
   use Application
@@ -14,7 +15,10 @@ defmodule OtpEs.Application do
            true <- length(a) > 0 do
         a
       else
-        _err -> [Node.self()]
+
+        _err ->
+            Logger.warn("Running on self node, do not cluster!")
+            [Node.self()]
       end
 
     children = [
