@@ -78,6 +78,7 @@ defmodule OtpEs do
 
   def init(stream_id) do
     nr = @repo.nr_of_events_in_stream(stream_id)
+    Logger.info("Nr of events on #{stream_id}")
     {:ok, nr}
   end
 
