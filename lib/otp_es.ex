@@ -52,7 +52,7 @@ defmodule OtpEs do
     Task.start_link(fn -> @repo.get_streams
    			  |> Task.async_stream(fn stream ->
      			  		       get_and_send_events(stream, pid)
-     			  		       end)
+     			  		       end, timeout: :infinity )
      		 	  |> Enum.map(fn result -> {:ok, :ok}  = result end)
      		    end)
 
