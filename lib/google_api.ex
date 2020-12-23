@@ -17,6 +17,7 @@ defmodule GoogleApi do
   end
 
   def get_streams() do
+    Logger.debug("#{@bucket}")
     {:ok, a} = get("/storage/v1/b/#{@bucket}/o/?delimiter=/")
     a.body["prefixes"]
     |> case do
