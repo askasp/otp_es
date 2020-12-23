@@ -8,10 +8,11 @@ defmodule OtpEs.Application do
   alias ExHashRing.HashRing
 
   def start(_type, _args) do
-    nodes = Application.fetch_env!(:otp_es, :nodes)
+    result = Application.fetch_env(:otp_es, :nodes)
 
     nodes =
-      with a when is_list(a) <- nodes,
+      with {:ok, nodes} <- result,
+      	   a when is_list(a) <- nodes,
            true <- length(a) > 0 do
         a
       else
