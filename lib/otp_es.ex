@@ -39,9 +39,10 @@ defmodule OtpEs do
          0 -> :ok
          nr -> 1..nr
        		|> Enum.to_list
-       		|> Enum.map(fn index -> event = @repo.get_event(stream_id, index)
+      		|> Task.async_stream(fn index -> event = @repo.get_event(stream_id, index)
        				send(pid, {stream_id, index, event})
-       				end)
+       				end, timeout: :infinity)
+       		|> Enum.map(fn _ -> :ok end )
        		:ok
        		end
   end
@@ -49,9 +50,6 @@ defmodule OtpEs do
   def read_and_subscribe_all_events() do
     Phoenix.PubSub.subscribe(:es_pubsub, "all")
     pid = self()
-    Logger.info("Read and subscribe all started")
-    IO.inspect(pid)
-    IO.inspect(DateTime.utc_now())
     Task.start_link(fn -> @repo.get_streams
    			  |> Task.async_stream(fn stream ->
      			  		       get_and_send_events(stream, pid)
@@ -59,9 +57,6 @@ defmodule OtpEs do
      		 	  |> Enum.map(fn result -> {:ok, :ok}  = result end)
      		    end)
 
-    Logger.info("Read and subscribe all ended")
-    IO.inspect(pid)
-    IO.inspect(DateTime.utc_now())
 
 
    :ok

@@ -9,6 +9,7 @@ defmodule OtpEsTest do
   use ExUnit.Case
 
   test "Read write" do
+
     nodes = LocalCluster.start_nodes("my-cluster", 3)
     stream_id = :crypto.strong_rand_bytes(64) |> Base.url_encode64()
     assert   GoogleApi.nr_of_events_in_stream(stream_id) == 0
