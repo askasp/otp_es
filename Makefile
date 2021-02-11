@@ -1,2 +1,2 @@
 all:
-	mix test
+	./testit.sh

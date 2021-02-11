@@ -24,8 +24,10 @@ defmodule OtpEs.Application do
 
     children = [
       {Registry, keys: :unique, name: StreamRegistry},
+      {Registry, keys: :unique, name: AggregateRegistry},
       {Phoenix.PubSub, name: :es_pubsub},
-      {DynamicSupervisor, strategy: :one_for_one, name: StreamSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: StreamSupervisor},
+      {DynamicSupervisor, strategy: :one_for_one, name: AggregateSupervisor}
     ]
 
     opts = [strategy: :one_for_one, name: OtpEs.Supervisor]

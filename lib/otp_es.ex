@@ -5,8 +5,18 @@ defmodule OtpEs do
   @repo GoogleApi
 
   def put_event(stream_id, event, expected_nr) do
-    get_node(stream_id)
-    |> :rpc.call(OtpEs, :put_event_local, [stream_id, event, expected_nr])
+    me = Node.self()
+    node = get_node(stream_id)
+    
+    node
+    |> case do
+        node when node == me  ->
+            IO.inspect "im me"
+            put_event_local(stream_id, event, expected_nr)
+        node ->
+            IO.puts " im not me"
+            :rpc.call(node, OtpEs, :put_event_local, [stream_id, event, expected_nr])
+       end
   end
 
   def get_event_nr(stream_id) do
@@ -18,11 +28,11 @@ defmodule OtpEs do
     node = FastGlobal.get(:ring) |> ExHashRing.HashRing.find_node(key)
     Logger.info("Node for stream #{key} is #{node}")
     node
-    end
+  end
 
   def delete_event(stream_id, nr), do: @repo.delete_event(stream_id, nr)
 
-  ##Only to be used by aggregatr
+  ##Only to be used by aggregate
   def get_all_events_from_stream(stream_id) do
        @repo.nr_of_events_in_stream(stream_id)
        |> case do
@@ -54,16 +64,15 @@ defmodule OtpEs do
    			  |> Task.async_stream(fn stream ->
      			  		       get_and_send_events(stream, pid)
      			  		       end, timeout: :infinity )
-     		 	  |> Enum.map(fn result -> {:ok, :ok}  = result end)
+     		  |> Enum.map(fn result -> {:ok, :ok}  = result end)
      		    end)
-
-
-
    :ok
   end
 
+  def subscribe_all_events(), do: Phoenix.PubSub.subscribe(:es_pubsub, "all")
 
   def start_link(args) do
+      
     [stream_id: stream_id, name: name] = args
     GenServer.start_link(__MODULE__, stream_id, name: name)
   end
@@ -75,8 +84,7 @@ defmodule OtpEs do
   
   def get_event_nr_local(stream_id) do
     {:ok, pid} = find_or_start_stream_agent(stream_id)
-    GenServer.call(pid, :get_event_nr) 
-    
+    GenServer.call(pid, :get_event_nr)
   end
 
   def init(stream_id) do
@@ -119,3 +127,106 @@ defmodule OtpEs do
     end
   end
 end
+
+defmodule OtpEs.AggregateAgent do
+  use GenServer
+
+  def with_aggregate(model, aggregate_id, function) do
+    find_or_start_aggregate_agent(model, aggregate_id)
+    via_tuple(model, aggregate_id) |> GenServer.call(function)
+  end
+
+  defp find_or_start_aggregate_agent(model, aggregate_id) do
+    Registry.lookup(AggregateRegistry, aggregate_id)
+    |> case do
+      [{_, _}] -> :ok
+      [] ->
+        DynamicSupervisor.start_child(
+          AggregateSupervisor,
+          {__MODULE__, aggregate_id: aggregate_id, model: model, name: {:via, Registry, {AggregateRegistry, aggregate_id}}}
+        )
+    end
+  end
+
+  def start_link(args) do
+	  [aggregate_id: aggregate_id, model: model, name: _] = args
+      name = via_tuple(model, aggregate_id)
+      GenServer.start_link(__MODULE__, {model, aggregate_id}, name: name)
+  end
+
+  defp via_tuple(model, aggregate_id) do
+    {:via, Registry, {AggregateRegistry, {model, aggregate_id}}}
+  end
+
+  def init({model, aggregate_id}) do
+	  IO.puts "init is returnig as well"
+      GenServer.cast(self(), :finish_init)
+    {:ok, {model, nil, aggregate_id, 0}}
+  end
+
+  def handle_cast(:finish_init, {model, state, aggregate_id, event_nr}) do
+    events = if aggregate_id, do: OtpEs.get_all_events_from_stream(aggregate_id), else: []
+    {:noreply, {model, state_from_events(model, events) || nil, aggregate_id, length(events)}}
+  end
+
+  def handle_call(function, _from, {model, state, aggregate_id, event_nr}) do
+    case function.(state) do
+      {:error, reason} ->
+        {:reply, {:error, reason}, {model, state, aggregate_id, event_nr}}
+      {new_state, event} ->
+	      :ok = OtpEs.put_event(aggregate_id, event, event_nr + 1)
+        {:reply, :ok, {model, new_state, aggregate_id, event_nr + 1}}
+    end
+  end
+
+  defp state_from_events(model, events) do
+    events
+    |> Enum.reduce(nil, fn(event, state) -> model.apply_event(state, event) end)
+  end
+end
+
+defprotocol OtpEs.CommandService do
+  def execute(command)
+end
+
+
+defmodule OtpEs.SideEffects do
+  def start_link([handlers: handlers]) do
+      GenServer.start_link(__MODULE__, handlers, name: __MODULE__)
+  end
+
+  def init(handlers) do
+      :ok = OtpEs.subscribe_all_events()
+      {:ok, handlers}
+  end
+
+  def handle_info({stream_id, event_nr, event}) do
+      ## have a node check here..
+
+  end
+
+
+end
+
+
+defmodule OtpEs.EventHandler do
+    use GenServer
+
+  def start_link([handlers: handlers]) do
+      GenServer.start_link(__MODULE__, handlers, name: __MODULE__)
+  end
+
+  def init(handlers) do
+      OtpEs.read_and_subscribe_all_events()
+      {:ok, handlers}
+  end
+
+  end
+
+
+
+
+
+
+
+    
