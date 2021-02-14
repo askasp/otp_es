@@ -131,51 +131,51 @@ end
 defmodule OtpEs.AggregateAgent do
   use GenServer
 
-  def with_aggregate(model, aggregate_id, function) do
-    find_or_start_aggregate_agent(model, aggregate_id)
-    via_tuple(model, aggregate_id) |> GenServer.call(function)
+  def with_aggregate(model, stream_id, function) do
+    find_or_start_aggregate_agent(model, stream_id)
+    via_tuple(model, stream_id) |> GenServer.call(function)
   end
 
-  defp find_or_start_aggregate_agent(model, aggregate_id) do
-    Registry.lookup(AggregateRegistry, aggregate_id)
+  defp find_or_start_aggregate_agent(model, stream_id) do
+    Registry.lookup(AggregateRegistry, stream_id)
     |> case do
       [{_, _}] -> :ok
       [] ->
         DynamicSupervisor.start_child(
           AggregateSupervisor,
-          {__MODULE__, aggregate_id: aggregate_id, model: model, name: {:via, Registry, {AggregateRegistry, aggregate_id}}}
+          {__MODULE__, stream_id: stream_id, model: model, name: {:via, Registry, {AggregateRegistry, stream_id}}}
         )
     end
   end
 
   def start_link(args) do
-	  [aggregate_id: aggregate_id, model: model, name: _] = args
-      name = via_tuple(model, aggregate_id)
-      GenServer.start_link(__MODULE__, {model, aggregate_id}, name: name)
+	  [stream_id: stream_id, model: model, name: _] = args
+      name = via_tuple(model, stream_id)
+      GenServer.start_link(__MODULE__, {model, stream_id}, name: name)
   end
 
-  defp via_tuple(model, aggregate_id) do
-    {:via, Registry, {AggregateRegistry, {model, aggregate_id}}}
+  defp via_tuple(model, stream_id) do
+    {:via, Registry, {AggregateRegistry, {model, stream_id}}}
   end
 
-  def init({model, aggregate_id}) do
+  def init({model, stream_id}) do
 	  IO.puts "init is returnig as well"
       GenServer.cast(self(), :finish_init)
-    {:ok, {model, nil, aggregate_id, 0}}
+    {:ok, {model, nil, stream_id, 0}}
   end
 
-  def handle_cast(:finish_init, {model, state, aggregate_id, event_nr}) do
-    events = if aggregate_id, do: OtpEs.get_all_events_from_stream(aggregate_id), else: []
-    {:noreply, {model, state_from_events(model, events) || nil, aggregate_id, length(events)}}
+  def handle_cast(:finish_init, {model, state, stream_id, event_nr}) do
+    events = if stream_id, do: OtpEs.get_all_events_from_stream(stream_id), else: []
+    {:noreply, {model, state_from_events(model, events) || nil, stream_id, length(events)}}
   end
 
-  def handle_call(function, _from, {model, state, aggregate_id, event_nr}) do
+  def handle_call(function, _from, {model, state, stream_id, event_nr}) do
     case function.(state) do
       {:error, reason} ->
-        {:reply, {:error, reason}, {model, state, aggregate_id, event_nr}}
+        {:reply, {:error, reason}, {model, state, stream_id, event_nr}}
       {new_state, event} ->
-	      :ok = OtpEs.put_event(aggregate_id, event, event_nr + 1)
-        {:reply, :ok, {model, new_state, aggregate_id, event_nr + 1}}
+	      :ok = OtpEs.put_event(stream_id, event, event_nr + 1)
+        {:reply, :ok, {model, new_state, stream_id, event_nr + 1}}
     end
   end
 
@@ -200,16 +200,23 @@ defmodule OtpEs.SideEffects do
       {:ok, handlers}
   end
 
-  def handle_info({stream_id, event_nr, event}) do
-      ## have a node check here..
+  def handle_info({stream_id, event_nr, event}, handlers) do
+    me = Node.self()
+    OtpEs.get_node(stream_id)
+    |> case do
+        node when node == me  ->
+            Enum.map(handlers, fn handler -> handler.handle({stream_id, event_nr, event}) end)
+        _-> :ignore
+       end
+
+      {:noreply, handlers}
 
   end
-
 
 end
 
 
-defmodule OtpEs.EventHandler do
+defmodule OtpEs.ReadModels do
     use GenServer
 
   def start_link([handlers: handlers]) do
@@ -221,7 +228,13 @@ defmodule OtpEs.EventHandler do
       {:ok, handlers}
   end
 
+  def handle_info({stream_id, event_nr, event}, handlers) do
+      Enum.map(handlers, fn handler -> handler.handle({stream_id, event_nr, event}) end)
+      {:noreply, handlers}
   end
+
+
+end
 
 
 

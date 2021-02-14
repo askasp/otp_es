@@ -27,7 +27,8 @@ defmodule OtpEs.Application do
       {Registry, keys: :unique, name: AggregateRegistry},
       {Phoenix.PubSub, name: :es_pubsub},
       {DynamicSupervisor, strategy: :one_for_one, name: StreamSupervisor},
-      {DynamicSupervisor, strategy: :one_for_one, name: AggregateSupervisor}
+      {DynamicSupervisor, strategy: :one_for_one, name: AggregateSupervisor},
+      {OtpEs.ReadModels, handlers: [OtpEs.ReadModel.Counter]}
     ]
 
     opts = [strategy: :one_for_one, name: OtpEs.Supervisor]
