@@ -189,7 +189,6 @@ defprotocol OtpEs.CommandService do
   def execute(command)
 end
 
-
 defmodule OtpEs.SideEffects do
   def start_link([handlers: handlers]) do
       GenServer.start_link(__MODULE__, handlers, name: __MODULE__)
@@ -210,11 +209,9 @@ defmodule OtpEs.SideEffects do
        end
 
       {:noreply, handlers}
-
   end
 
 end
-
 
 defmodule OtpEs.ReadModels do
     use GenServer
