@@ -52,29 +52,35 @@ defimpl OtpEs.CommandService, for: Model.Counter.Increment do
   end
 end
 
+
 defmodule OtpEs.ReadModel.Counter do
   defmodule State, do: defstruct([:id, :count])
+  use GenServer
 
-  def get(stream_id) do
-      [{_id, value } ] = :ets.lookup(:rm_counter, stream_id)
-      value
+  def start_link(), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  def init(_) do
+          OtpEs.read_and_subscribe_all_events()
+      {:ok, %{}}
   end
 
-  def handle({stream_id, _event_nr, %Model.Counter.Created{} = _event}) do
-    case :ets.whereis(:rm_counter) do
-      :undefined -> :ets.new(:rm_counter, [:named_table])
-      _ -> :ignore
-    end
+  def get(id), do: GenServer.call(__MODULE__,{:get ,id})
 
-    :ets.insert(:rm_counter, {stream_id, %State{id: stream_id, count: 0}})
+  def handle_call({:get, id}, _from, state) do
+      return_value = Map.get(state, id)
+      {:reply, return_value, state}
   end
 
-  def handle({stream_id, _event_nr, %Model.Counter.Incremented{}}) do
-    state = get(stream_id)
-
-    :ets.insert(:rm_counter, {stream_id, %State{state | count: state.count + 1 }})
-
+  def handle_info({stream_id, _event_nr, %Model.Counter.Created{} = _event}, all_states) do
+      new_state = Map.put(all_states, stream_id, %State{id: stream_id, count: 0})
+      {:noreply, new_state}
   end
 
-  def handle(_), do: :ok
+  def handle_info({stream_id, _event_nr, %Model.Counter.Incremented{}}, all_states) do
+      old_state = Map.get(all_states, stream_id)
+      new_state = %State{old_state | count: old_state.count + 1 }
+      {:noreply, Map.put(all_states, stream_id, new_state)}
+  end
+
+  def handle_info(_,state), do: {:noreply, state}
+
 end

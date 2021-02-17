@@ -66,9 +66,8 @@ defmodule OtpEsTest do
        OtpEs.delete_event("agg_id2", 1)
        OtpEs.delete_event("agg_id3", 1)
 
-
        nodes = LocalCluster.start_nodes("my-cluster", 3)
-       OtpEs.ReadModels.start_link([handlers: [OtpEs.ReadModel.Counter]])
+       OtpEs.ReadModel.Counter.start_link()
 
        assert %Model.Counter.Create{stream_id: "agg_id"}
       |> OtpEs.CommandService.execute() == :ok
